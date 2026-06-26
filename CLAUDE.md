@@ -1,316 +1,306 @@
-# <PROJECT_NAME> — <One-line tagline>
+# CLAUDE.md — Project Working Contract
 
-> **Mission:** <2-3 sentences describing what the project is, what problem it solves, and why
-> it exists. If you can't explain it in 3 lines, the project isn't defined yet.>
+> **Mission:** <_one-sentence statement of what this project is and why it exists. fill in per project._>
 
-This file is the **working contract** for any agent (human or AI) touching this repository.
-**These rules override default behaviors.** Read it completely before your first modification;
-if something doesn't make sense, ask before assuming.
+This file is the working contract for any agent — human or AI — that touches this
+repository. **These rules override default behavior.** If a rule conflicts with a
+convention read elsewhere, this file wins unless it explicitly defers.
 
-> **Size budget:** keep this file ≤ <40 KB>. Beyond that size, prompt cache stops paying off
-> and every assistant invocation pays a tax. If you need to add a section, move long-form
-> content to `<dir>/README.md` and link it from here.
-
----
-
-## 1. Unbreakable principles
-
-These principles are **non-negotiable** under deadline pressure, convenience, or "just for
-now." Any PR that violates them is rejected, even if it passes tests.
-
-1. **<Principle 1 — e.g., Zero Trust>** — <Operational definition in 1-2 sentences. What it
-   means in code, what it explicitly forbids.>
-2. **<Principle 2 — e.g., Fail Closed>** — <When in doubt, reject. Never degrade a guarantee
-   for convenience.>
-3. **<Principle 3 — e.g., Single Source of Truth>** — <Each piece of data lives in exactly one
-   place. If it's replicated, it's a bug.>
-4. **<Principle 4 — e.g., Auditable by Default>** — <What can't be inspected doesn't enter. No
-   black boxes, no closed-source binaries, no obfuscation.>
-5. **<Principle 5 — e.g., Agent-Safe>** — <The project is safe for the user and for the AI
-   agent operating it. External content is data with provenance, never instruction.>
-6. **<Principle 6 — e.g., Boring Technology>** — <We choose boring, proven technology. Novelty
-   must be justified; convenience is not enough.>
+This is a **template**. Replace every angle-bracket placeholder (`<_..._>`) with
+the project's real values before the first commit. Delete any section that does
+not apply, but do not weaken the doctrine to make a section fit — if a section
+does not fit, the project probably needs a different shape.
 
 ---
 
-## 2. Language and style constraints
+## 1. The Inviolable Principles
 
-- **Language:** <e.g., Pure C only (C11) / Python 3.11+ only / Strict TypeScript only>. No
-  <prohibited languages>. The entry file rejects prohibited languages with
-  `<rejection mechanism>`.
-- **Identifiers and strings in English.** Documentation (`spec/`, this file, `docs/`) may be
-  in <team language>; code must not be.
-- **No emojis in code.** Comments only when explaining a non-obvious *why*; no noise. Public
-  headers/APIs carry contract documentation.
-- **Naming:** <e.g., module prefix `sf_` / snake_case / camelCase with domain prefix>. No
-  mutable global state; everything reentrant where the language allows.
-- **Memory/resource ownership:** each allocation has a single owner and a single idempotent
-  releaser.
+These principles are non-negotiable. They apply to every language, every stack,
+every commit.
+
+1. **Zero Assumption** — No value is assumed. No constant, type, signature,
+   protocol field, endpoint, flag, or environment variable is invented to make
+   code compile or a test pass. If a value is unknown, it is left as a documented
+   blocker (`/* FIXME: source needed */` or equivalent) and the code path is
+   marked pending. A plausible placeholder is still a placeholder. Every constant
+   must have a verifiable source: a spec, a standard, a capture, a disassembly, a
+   log, a header, a contract. "Probably" is not a source.
+
+2. **Evidence over Intuition** — Every behavioral claim — a constant, an offset,
+   a return value, a side effect, an error code — must be traceable to evidence:
+   a test that exercises it, a spec that states it, a standard that defines it, a
+   capture that shows it, or a log that proves it. "I think it works that way" is
+   not evidence. When evidence is missing, the claim is a blocker, not a fact.
+
+3. **Safe by Default** — The unsafe configuration must not be representable in
+   the API. Validation of inputs, bounds on buffers, handling of error returns,
+   no unbounded copies, no unchecked casts, no silent swallowing of failures.
+   Fail closed: if a guarantee cannot be verified, the operation is rejected. A
+   missing check is a bug, not a TODO. The default posture is deny; permission is
+   explicit and narrow.
+
+4. **Non-Interference** — A component must not break what another component owns.
+   A detector does not claim the resource it detects. A library does not mutate
+   state it does not own. A test does not leave side effects for the next test. A
+   migration does not lock out existing callers. If two components share a
+   boundary, the contract at that boundary is explicit and guarded. Interference
+   with a working system is a critical bug.
+
+5. **Traceability (Immutable Nomenclature)** — Names that encode provenance are
+   kept one-to-one with their source: a disassembly symbol, a standard field, a
+   protocol tag, a spec identifier. They are not renamed to _v2, _New, _Fixed,
+   _clean. Renaming severs the link to the evidence and is forbidden. Aesthetic
+   preference does not override traceability.
+
+6. **Extensible by Design** — Code is written for the 100th case, not just the
+   first. Identifiers are centralized, access is indexed or dispatch-based, APIs
+   are generic over the thing they operate on. Adding a new instance of the thing
+   the project manages must not require touching a switch statement, a
+   hand-rolled serializer, or a copy-pasted handler. If the third addition smells
+   like duplication, the abstraction is extracted before the fourth.
+
+**Separation doctrine:** pure logic — math, parsing, encoding, decisions, state
+transitions — lives in functions with no I/O and no hidden state. This is the
+directly testable surface. Orchestrators — the parts that read files, open
+sockets, call frameworks, touch the clock, hit the network — only wire and call
+the pure functions. Responsibilities are never mixed. If a function both
+computes and talks to the outside world, split it.
 
 ---
 
-## 3. Methodology: <SDD + TDD / Spec-First / etc.>
+## 2. Style and Conventions
 
-For each module, the cycle is inviolable:
-
-1. **Spec** — `spec/<module>.md`: inputs, outputs, error table, guarantees, and out-of-scope
-   items.
-2. **Test (red)** — `tests/test_<module>.<ext>` with <framework>. Must **fail** because there's
-   no implementation yet.
-3. **Code (green)** — `src/<module>.<ext>` with minimal code to pass.
-4. **Refactor** — harden boundaries, readability, without breaking tests.
-5. **Audit** — `<audit commands: linters, sanitizers, type-checkers, etc.>`.
-
-**Don't write implementation before spec and test.** Don't advance milestones without the
-previous one being green and audited.
-
-**Test-oriented design:** <critical domain> logic goes in **pure functions without I/O**
-(directly verifiable surface); orchestrators with network/OS only wire and call those pure
-functions on real state.
+- **Language and stack:** <_primary language, runtime/framework, and version.
+  pin versions that matter._> This is a template; the project fills this in.
+  Within a project, the stack is fixed — do not introduce a second language or
+  framework mid-stream without a spec that justifies it.
+- **Identifiers and strings in code: English.** Comments explain a non-obvious
+  *why*, never the *what* the code already says. Documentation (specs, this file,
+  README) may be in the team's working language.
+- **Naming:** consistent prefix or namespace per module. No global mutable state
+  without an explicit, lifecycle-managed singleton. Every acquisition (alloc,
+  open, connect, lock) has a named, idempotent releaser.
+- **Formatting:** whatever the project's formatter enforces, enforced
+  automatically on save and on CI. No manual reformats mixed into logic commits.
+- **Headers / interface definitions:** document the contract — inputs, outputs,
+  errors, ownership, thread-safety — not the implementation.
 
 ---
 
-## 4. Technology stack (current decisions)
+## 3. Methodology: SDD + Strict TDD + BDD Given-When-Then
 
-| Module | Tool / Library | Justification |
+For every module, the cycle is inviolable and **in this order**, boyscout mode,
+technical-debt extinguisher:
+
+1. **Spec** — `spec/<module>.md`: inputs, outputs, error table, safety
+   guarantees, what is explicitly out of scope, and — critically — the **source
+   of every constant and assumption** (standard, capture, contract, disassembly).
+   Written in Given-When-Then (BDD) form: *Given* a precondition, *When* an
+   action, *Then* an observable outcome. The spec is the contract the tests
+   enforce and the code fulfills.
+
+2. **Test (red)** — `tests/test_<module>.<ext>` in the project's test framework.
+   It must **fail** because no implementation exists yet. Tests target the pure
+   functions first (unit, deterministic, no I/O) and the orchestrators second
+   (integration, with I/O stubbed or sandboxed). A test that cannot fail is not a
+   test — delete it or make it assert something real.
+
+3. **Code (green)** — `src/<module>.<ext>` with the minimum code to pass the
+   tests. **No compilable placeholders:** an unknown value is a documented
+   blocker, never a fudged constant. If a test cannot be written because a value
+   is unknown, the test is marked skip-with-reason and the blocker is recorded;
+   the implementation does not pretend.
+
+4. **Refactor** — harden pointers/bounds/ownership, improve legibility, extract
+   duplication, without breaking tests. **Refactor is never out of scope.** If
+   you see duplicated logic, unify it — this is imperative: seek duplicated logic
+   and extinguish it without losing functionality. If you can do in 10 or 1 line
+   what you did in 40, do it, as long as it respects the project's design
+   principles and loses no functionality and adds no debt. Boyscout mode: if you
+   see technical debt, extinguish it without breaking functionality. The same
+   applies to security failures and vulnerabilities — their extinction is never
+   out of scope.
+
+5. **Validate** —
+   - Unit + integration suite green.
+   - Static analysis clean (whatever the project uses: linter, type checker,
+     dependency scanner).
+   - Dynamic analysis clean where applicable (sanitizers for memory/UB, leak
+     checker, race detector). Zero leaks, zero UB, zero races before closing.
+   - The project's golden/characterization test — the one canonical example
+     every contributor knows — must pass. Always.
+
+6. **Fuzz** — every path that takes external input is fuzzed: parsers,
+   deserializers, protocol decoders, input validators. The fuzzer runs until it
+   finds no crashes, no leaks, no undefined behavior, no assertion failures for a
+   meaningful budget. Findings are fixed at the source, not by suppressing the
+   fuzzer. New input-taking code ships with a fuzz target.
+
+7. **Document** — **only after** validate and fuzz pass: update the spec, this
+   `CLAUDE.md` (blocker resolved, new doctrine, new invariant), the README.
+   Documenting before validating is documenting what is not yet true.
+
+**Do not write implementation before spec and test.** Do not advance a phase
+until the previous one is green, validated, and (where applicable) fuzzed.
+
+**Test-driven design:** pure logic — math, parsing, encoding, decisions — lives
+in pure functions with no I/O (the directly testable surface); orchestrators only
+wire and call those pure functions. Design so that the interesting behavior is
+the testable behavior.
+
+---
+
+## 4. Technology Stack
+
+> This section is **the only project-specific part that must be filled in**.
+> Everything else in this template is stack-neutral. Delete technologies that do
+> not apply; add rows that do.
+
+| Component | Technology | Note |
 | :-- | :-- | :-- |
-| <Module 1> | `<choice>` | <why this and not another> |
-| <Module 2> | `<choice>` | <why> |
-| Testing | `<framework>` | <reason> |
-| Build | `<tool>` | <reason> |
-| Linting / Type-check | `<tools>` | <reason> |
-| Documentation | `<tool>` | <reason> |
+| <_component_> | <_language/framework/version_> | <_constraint or reason_> |
+| Tests | <_framework_> | TDD. <_install/run command_>. |
+| Static analysis | <_tool_> | CI gate. |
+| Dynamic analysis | <_sanitizer/leak checker_> | <_command_>. |
+| Fuzzing | <_fuzzer_> | <_command/targets_>. |
+| Packaging | <_system_> | <_command_>. |
 
-> **Dependency policy:** every new dependency must be justified by attack surface reduction or
-> maintenance, not convenience. Prefer stdlib when a reasonable equivalent exists. No
-> dependencies that drag in huge sub-trees.
+**The Makefile / build script is the single source of truth for commands.**
+Wrapper scripts are thin delegators. If a wrapper duplicates build logic it
+desynchronizes and becomes debt — unify.
 
-### Anti-pattern decisions (explicitly prohibited)
+### Hardening
 
-- ❌ `<prohibited dependency or pattern 1>` — <reason>.
-- ❌ `<prohibited dependency or pattern 2>` — <reason>.
-- ❌ `<prohibited dependency or pattern 3>` — <reason>.
+List the compiler/runtime flags the project mandates (bounds checking, stack
+protection, fortify, strict warnings-as-errors, etc.). If the language has no
+such flags, state the static-analysis gate that substitutes for them.
 
----
+### Critical blockers (values pending evidence)
 
-## 5. Compilation / Build / Validation
-
-`<build command>` applies by default (see `<build file>`):
-<default flags: warnings as errors, hardening, optimization, etc.>
-
-Targets:
-
-- `<target>` / `<target all>` — builds the project.
-- `<target test>` — runs the test suite.
-- `<target lint>` — linters + type-checkers.
-- `<target audit>` — sanitizers / static analysis.
-- `<target clean>`.
-
-Every PR must pass `<mandatory targets>` clean before integration.
-
----
-
-## 6. Repository structure
-<project>/
-├── CLAUDE.md # this file
-├── <build file> # build + targets
-├── include/ | src/ # <code convention>
-├── spec/ # SDD specifications
-├── tests/ # test suites
-├── docs/ # public documentation
-├── scripts/ # build/maintenance utilities
-└── <other directories> # each with its own README.md
-
-
-**Rule:** every new directory must have its own `README.md` created in the same commit that
-introduces it. No exceptions.
-
----
-
-## 7. Entry points
-
-```sh
-# Local development
-<command to start development environment>
-
-# Tests
-<command to run tests>
-
-# Production build
-<command for release build>
-
-# AI agent integration (if applicable)
-<command to register MCP / tool server / etc.>
+Track here any value the project cannot yet source. Each entry: what is unknown,
+why it matters, the method to resolve it (disassembly, capture, standard, log),
+and the status. **No value in this list is ever filled with a guess.** When
+resolved, move it to the resolved log with the evidence link.
 ```
-<entry point 1> is the only one launched directly; the rest are imported or invoked
-through it.
-<entry point 2> starts <component> and requires <precondition> to be satisfied.
-
-<ASCII diagram of main flow>
-## 8. Architecture
-operator / user ──► <entry point>
-                ──► <component A> ──► <state>
-                ──► <component B> ──► <output>
-
-                
-9. Configuration — single source of truth
-All runtime configuration lives in <config file> (or equivalent). Nothing hardcoded;
-nothing duplicated; if it's reused, it goes there.
-Critical keys:
-Key
-Purpose
-<key_1>
-<what it controls>
-<key_2>
-<what it controls>
-<key_3>
-<what it controls>
-Read/write:
-In-process: <internal API>.
-External: <public API>.
-From AI agent: <MCP tool / tool>.
-Cross-process state must go through this file. Don't invent new config files without
-justifying a genuinely distinct domain.
-10. Conventions per component
-10.1 <Component A> (e.g., CLI)
-Happy path when adding something new:
-<Step 1>.
-<Step 2>.
-<Step 3>.
-<Step N>.
-Sad paths:
-<Expected failure 1> → <how it's handled>.
-<Expected failure 2> → <how it's handled>.
-DO NOT:
-<Anti-pattern 1>.
-<Anti-pattern 2>.
-10.2 <Component B> (e.g., server / API / UI)
-<Identical structure: happy path, sad paths, anti-patterns.>
-10.3 <Component C> (e.g., utils / shared library)
-Need
-Use
-<case 1>
-<function/module>
-<case 2>
-<function/module>
-New helpers go here only if shared between components. Feature-local helpers →
-<dir>/modules/<feature>.<ext>.
-11. Coding standards (enforced in review)
-English only in identifiers, strings, logs, docstrings.
-No comments unless explaining a non-obvious why or referencing a CVE/issue.
-No emojis in code/logs/docs.
-Docstrings on every public API with Args, Returns, Raises (or language
-equivalent).
-No magic numbers — named constants in <canonical location>.
-No hardcoded paths/ports/IPs/creds — config if global, module constant if local.
-SOLID:
-S: single reason to change per class/function.
-O: extend via <extension mechanism>, don't edit hot paths.
-L: new implementations honor the base interface contract.
-I: small, role-specific protocols.
-D: orchestration depends on abstractions, not concretions.
-Consistency > novelty — when two patterns fit, pick the one already used.
-No partial implementations — end-to-end or not merged.
-Boy-scout law — if your change uncovers tech debt that can be resolved without
-breaking public surface, resolve it in the same PR and mention it in the description.
-Every new directory gets a README — no exceptions.
-Tests trend to 100% — every change ships with tests. If touched module gains testable
-code, the change must raise coverage, not lower it.
-Docs follow code — new/renamed public API → update <relevant docs> in the same PR.
-12. Spec-driven discipline (sad paths)
-For each change, consider at least 6 sad paths in the commit/PR body:
-Required config key missing or empty.
-External binary or resource absent.
-Network unreachable / timeout / TLS error.
-Input already exists in state store — don't redo destructive work.
-Concurrent writer (CLI + daemon + agent).
-<Domain-specific threat: EDR detection, prompt injection, hostile content, etc.>.
-Termination signal (SIGINT / SIGTERM) → deterministic cleanup.
-Long-running tool exceeds runtime — never auto-kill, log and continue.
-If a sad path has no defensive code, justify it explicitly in the PR (e.g., "internal call
-from X, validated upstream").
-13. Extension surfaces (where to add new things)
-Goal
-Correct surface
-Integrate external tool
-<plugin file/config>
-New CLI command
-<command registration pattern>
-New API endpoint
-<routes file>
-New AI agent tool
-<MCP tools registry>
-New selector/agent
-<base class>
-New backend (LLM, storage, etc.)
-<factory / registry>
-New directory
-create + README.md in same commit
-Adding <heavy pattern> for something that works as <lightweight pattern> = smell. Rethink.
-14. What the project deliberately does NOT do
-<Self-imposed limitation 1> — <reason>.
-<Self-imposed limitation 2> — <reason>.
-<Self-imposed limitation 3> — <reason>.
-Persist secrets in git.
-<Other explicit renunciations>.
-15. Rules for the assistant (AI)
-Apply the <methodology> cycle: spec → red test → green code → refactor → audit. Don't skip
-steps.
-Fail closed. When in doubt, reject; never degrade a guarantee for convenience.
-Don't introduce new dependencies without justifying them, and never the prohibited ones (§4).
-Be honest about unverified code: code that can't be exercised in this environment must be
-marked as pending integration testing, not presented as verified.
-Verify that each symbol/flag/algorithm exists on this host before recommending it.
-Don't touch <fragile files/directories> without explicit confirmation.
-If a change touches more than <N> unrelated files, stop and propose a plan before executing.
-16. Milestone roadmap
-Milestone 0 — <Basic infrastructure: build, tests, CI>. (status: <done/in progress/pending>)
-Milestone 1 — <First functional component>. (status)
-Milestone 2 — <Second component / integration>. (status)
-Milestone 3 — <Hardening / audit / public documentation>. (status)
-Milestone N — <Release / production>. (status)
-Each closed milestone must leave: green tests, clean audit, updated spec, current docs. No
-exceptions.
-17. Branching strategy
-<Describe the project's branch model. Generic example:>
-Branch
-Purpose
-Who merges
-dev
-Active development, daily integration.
-Feature branches via PR.
-staging
-Pre-production / QA.
-dev after passing QA.
-main
-Production. Only tagged releases.
-staging via PR with release notes.
-Rules:
-Never commit directly to main or staging.
-Hotfixes: branch from main, fix, PR to main, back-merge to staging and dev.
-Version tags only on main.
-18. Read next
-<quick onboarding file> — start here if it's your first session.
-README.md — public feature list.
-<API/CLI reference file> — complete reference.
-CHANGELOG.md — release history.
-<dir>/README.md — every directory; read before editing.
-spec/<topic>.md — before touching a module, read its spec.
-When in doubt: read <config> → <state> → directory's README.md → then write code.
-
 
 ---
 
-### How to use this template
+## 5. Build, Hardening, and Verification
 
-1. **Copy it** as `CLAUDE.md` at your new repository root.
-2. **Replace all `<PLACEHOLDER>`** with your project's actual data. The guidance phrases between `< >` are guides, not final content — remove them when filling in.
-3. **Remove sections that don't apply.** If your project has no AI agent, remove §15 (or keep only the general honesty rules). If there's no C2/server, remove §10.2. If complex branching doesn't apply, simplify §17.
-4. **Keep it alive.** A `CLAUDE.md` that doesn't update with the project becomes noise. Review it at each release.
-5. **Respect the size budget.** If it grows too large, extract sections to `docs/` or `spec/` and link them.
+- **Build command:** &lt;_single command from the Makefile/build script_&gt;.
+- **Test command:** &lt;_single command_&gt;.
+- **Static analysis command:** &lt;_single command_&gt;.
+- **Dynamic analysis command:** &lt;_single command_&gt;.
+- **Fuzz command:** &lt;_single command_&gt;.
 
-### Design decisions in this template
+Every PR / integration must pass build + test + static analysis clean before
+merge. Dynamic analysis and fuzzing are gates for paths that take external input.
 
-- **Inspired by Freedom** for: unbreakable principles, SDD+TDD, stack with justification, milestones with explicit status, anti-pattern rules.
-- **Inspired by LazyOwn** for: size budget, repo map, single source of truth, per-component conventions with happy/sad paths, extension surfaces, branching strategy, "read next".
-- **Added generic**: explicit placeholders, reusable sad paths table, "what it does NOT do" section (critical for scoping).
+The build file is the single source of truth for these commands. If you need a
+new command, add it to the build file, not to a stray script.
+
+---
+
+## 6. Repository Structure
+
+```
+<_project_root_>/
+├── CLAUDE.md                  # this file
+├── <_build file_>             # single source of truth for commands
+├── spec/                      # SDD specifications (Given-When-Then)
+│   └── <module>.md
+├── src/                       # implementations
+│   └── <module>.<ext>
+├── tests/                     # test suites
+│   └── test_<module>.<ext>
+├── docs/                      # additional documentation
+└── <_other project dirs_>
+```
+
+&gt; Adapt to the project&#x27;s real layout. The invariant: spec, src, and tests live
+&gt; as first-class siblings, each module present in all three.
+
+---
+
+## 7. Roadmap
+
+&gt; **Status convention:** *closed* = spec + test green + static analysis clean +
+&gt; dynamic analysis clean (where applicable) + fuzzed (where applicable). What
+&gt; only compiles but could not be exercised is marked **pending validation**, not
+&gt; verified.
+
+### 7.1 Current status
+
+| Component | Status | Evidence |
+| :-- | :-- | :-- |
+| &lt;_component_&gt; | &lt;_closed / pending / blocker_&gt; | &lt;_what proves the status_&gt; |
+
+**Active doctrine decisions** (not evident in the code; do not re-litigate):
+
+- **&lt;_doctrine name_&gt;:** &lt;_one-line statement and the reason it is
+  non-negotiable_.&gt; See `[[_project-tag_]]`.
+
+- Add one bullet per settled decision that a new contributor would otherwise
+  re-open. If a decision is overturned, update the bullet — do not leave stale
+  doctrine.
+
+### 7.2 Closed milestones
+
+- **&lt;_phase name_&gt;:** &lt;_what was delivered and what proves it. note if
+  validation with real hardware/environment is still pending._&gt;
+
+### 7.3 Roadmap — to cross
+
+- **&lt;_next phase_&gt;:** &lt;_what unblocks it, what evidence is needed, what the
+  validation criteria are._&gt;
+
+**Ongoing background:** fuzzing of input paths; static/dynamic analysis hygiene;
+documentation post-validation; continuous boyscout-mode debt extinction.
+
+---
+
+## 8. Rules for the Assistant (AI)
+
+- Apply the full cycle of §3 **in order**: spec → red test → green code →
+  refactor → validate (suite + static + dynamic) → fuzz → document. Do not skip
+  steps, do not front-run implementation without spec + test, and do not
+  document before validating and fuzzing.
+
+- **Zero Assumption.** When a constant or contract is uncertain, ask for
+  evidence with a directed question (inverse-Socratic: &quot;in the source of truth,
+  go to X, follow the reference to Y, copy the value at Z&quot;). Never invent a
+  value to unblock yourself.
+
+- **Fail closed.** When a safety guarantee (bounds, pointer, ownership, I/O
+  error) is in doubt, reject the operation; never weaken a guarantee for
+  convenience. Missing validation is a bug, not a TODO.
+
+- **Non-Interference.** A component does not break what another owns. Verify the
+  boundary contract before touching a shared resource.
+
+- **Immutable nomenclature.** Keep provenance-encoding names as they are. Do not
+  rename &quot;to improve.&quot; Traceability is a requirement.
+
+- Be honest about what is not verified: code that could not be exercised here
+  (real I/O, hardware, network, production environment) is marked pending
+  validation, not verified.
+
+- Verify that every symbol, flag, and constant exists before recommending it
+  (read the source, run the tool, check the standard). Do not rely on recall for
+  specifics.
+
+- New commands go in the **build file** (single source of truth), not in stray
+  scripts that desynchronize (see §5).
+
+- **Boyscout mode:** extinguishing technical debt and security failures is never
+  out of scope, always without losing functionality. Seek and extinguish
+  duplicated logic. If 40 lines can be 10 or 1 without losing functionality or
+  adding debt, do it.
+
+- **Lateral thinking** when the environment demands it (missing dependency,
+  unsupported platform, unusual constraint). Document the non-obvious solution in
+  the spec so the next agent does not re-derive it.
+
+- When unsure between two approaches, prefer the one with the smaller blast
+  radius and the more testable surface. State the trade-off; do not silently
+  pick.
